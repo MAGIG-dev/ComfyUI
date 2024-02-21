@@ -5,7 +5,7 @@ import threading
 import heapq
 import traceback
 import inspect
-from typing import List, Literal, NamedTuple, Optional
+from typing import Any, List, Literal, NamedTuple, Optional
 
 import torch
 import nodes
@@ -117,7 +117,7 @@ def format_value(x):
     else:
         return str(x)
 
-def recursive_execute(server, prompt, outputs, current_item, extra_data, executed, prompt_id, outputs_ui, object_storage):
+def recursive_execute(server: Any | None, prompt, outputs, current_item, extra_data, executed, prompt_id, outputs_ui, object_storage):
     unique_id = current_item
     inputs = prompt[unique_id]['inputs']
     class_type = prompt[unique_id]['class_type']
@@ -140,9 +140,13 @@ def recursive_execute(server, prompt, outputs, current_item, extra_data, execute
     input_data_all = None
     try:
         input_data_all = get_input_data(inputs, class_def, unique_id, outputs, prompt, extra_data)
-        if server.client_id is not None:
-            server.last_node_id = unique_id
-            server.send_sync("executing", { "node": unique_id, "prompt_id": prompt_id }, server.client_id)
+
+        if server is None:
+            print(f"executing node {unique_id}, prompt_id: {prompt_id}")
+        else:
+            if server.client_id is not None:
+                server.last_node_id = unique_id
+                server.send_sync("executing", { "node": unique_id, "prompt_id": prompt_id }, server.client_id)
 
         obj = object_storage.get((unique_id, class_type), None)
         if obj is None:
@@ -153,8 +157,11 @@ def recursive_execute(server, prompt, outputs, current_item, extra_data, execute
         outputs[unique_id] = output_data
         if len(output_ui) > 0:
             outputs_ui[unique_id] = output_ui
-            if server.client_id is not None:
-                server.send_sync("executed", { "node": unique_id, "output": output_ui, "prompt_id": prompt_id }, server.client_id)
+            if server is None:
+                print("executed node: {unique_id}, output: {output_ui}, prompt_id: {prompt_id}")
+            else:
+                if server.client_id is not None:
+                    server.send_sync("executed", { "node": unique_id, "output": output_ui, "prompt_id": prompt_id }, server.client_id)
     except comfy.model_management.InterruptProcessingException as iex:
         logging.info("Processing interrupted")
 
@@ -265,7 +272,7 @@ def recursive_output_delete_if_changed(prompt, old_prompt, outputs, current_item
     return to_delete
 
 class PromptExecutor:
-    def __init__(self, server):
+    def __init__(self, server = None):
         self.server = server
         self.reset()
 
@@ -278,6 +285,10 @@ class PromptExecutor:
         self.old_prompt = {}
 
     def add_message(self, event, data, broadcast: bool):
+        if self.server is None:
+            print(f"Message: {event} {data}")
+            return
+        
         self.status_messages.append((event, data))
         if self.server.client_id is not None or broadcast:
             self.server.send_sync(event, data, self.server.client_id)
@@ -331,10 +342,11 @@ class PromptExecutor:
         
         nodes.interrupt_processing(False)
 
-        if "client_id" in extra_data:
-            self.server.client_id = extra_data["client_id"]
-        else:
-            self.server.client_id = None
+        if self.server is not None:
+            if "client_id" in extra_data:
+                self.server.client_id = extra_data["client_id"]
+            else:
+                self.server.client_id = None
 
         self.status_messages = []
         self.add_message("execution_start", { "prompt_id": prompt_id}, broadcast=False)
@@ -395,7 +407,10 @@ class PromptExecutor:
 
             for x in executed:
                 self.old_prompt[x] = copy.deepcopy(prompt[x])
-            self.server.last_node_id = None
+
+            if self.server is not None:
+                self.server.last_node_id = None
+
             if comfy.model_management.DISABLE_SMART_MEMORY:
                 comfy.model_management.unload_all_models()
 
