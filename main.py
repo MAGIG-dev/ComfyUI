@@ -181,6 +181,6 @@ if __name__ == "__main__":
 
         execution.validate_prompt(workflow)
 
-        prompt_worker(workflow, "0")
+        prompt_worker(workflow, "test")
 
     cleanup_temp()
