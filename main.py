@@ -6,6 +6,7 @@ import os
 import importlib.util
 import folder_paths
 import time
+import execution
 
 
 def execute_prestartup_script():
@@ -176,6 +177,10 @@ if __name__ == "__main__":
 
     with open(args.workflow, "r") as f:
         workflow = yaml.safe_load(f)
+        print("Loaded workflow:", workflow)
+
+        execution.validate_prompt(workflow)
+
         prompt_worker(workflow, "0")
 
     cleanup_temp()

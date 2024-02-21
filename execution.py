@@ -140,9 +140,13 @@ def recursive_execute(server, prompt, outputs, current_item, extra_data, execute
     input_data_all = None
     try:
         input_data_all = get_input_data(inputs, class_def, unique_id, outputs, prompt, extra_data)
-        if server.client_id is not None:
-            server.last_node_id = unique_id
-            server.send_sync("executing", { "node": unique_id, "prompt_id": prompt_id }, server.client_id)
+
+        if server is None:
+            print(f"executing node {unique_id}, prompt_id: {prompt_id}")
+        else:
+            if server.client_id is not None:
+                server.last_node_id = unique_id
+                server.send_sync("executing", { "node": unique_id, "prompt_id": prompt_id }, server.client_id)
 
         obj = object_storage.get((unique_id, class_type), None)
         if obj is None:
@@ -153,8 +157,11 @@ def recursive_execute(server, prompt, outputs, current_item, extra_data, execute
         outputs[unique_id] = output_data
         if len(output_ui) > 0:
             outputs_ui[unique_id] = output_ui
-            if server.client_id is not None:
-                server.send_sync("executed", { "node": unique_id, "output": output_ui, "prompt_id": prompt_id }, server.client_id)
+            if server is None:
+                print("executed node: {unique_id}, output: {output_ui}, prompt_id: {prompt_id}")
+            else:
+                if server.client_id is not None:
+                    server.send_sync("executed", { "node": unique_id, "output": output_ui, "prompt_id": prompt_id }, server.client_id)
     except comfy.model_management.InterruptProcessingException as iex:
         logging.info("Processing interrupted")
 
