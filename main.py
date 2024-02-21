@@ -3,10 +3,11 @@ import comfy.options
 comfy.options.enable_args_parsing()
 
 import os
-import importlib.util
-import folder_paths
+import uuid
 import time
 import execution
+import folder_paths
+import importlib.util
 
 
 def execute_prestartup_script():
@@ -177,10 +178,14 @@ if __name__ == "__main__":
 
     with open(args.workflow, "r") as f:
         workflow = yaml.safe_load(f)
-        print("Loaded workflow:", workflow)
+        valid = execution.validate_prompt(workflow)
 
-        execution.validate_prompt(workflow)
-
-        prompt_worker(workflow, "test")
+        if valid[0]:
+            prompt_id = str(uuid.uuid4())
+            outputs_to_execute = valid[2]
+            prompt_worker(workflow, prompt_id, {}, outputs_to_execute)
+        else:
+            print("invalid prompt:", valid[1])
+            print("node errors:", valid[3])
 
     cleanup_temp()
