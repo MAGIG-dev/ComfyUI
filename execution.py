@@ -279,6 +279,7 @@ class PromptExecutor:
 
     def add_message(self, event, data, broadcast: bool):
         if self.server == None:
+            print(f"Message: {event} {data}")
             return
         
         self.status_messages.append((event, data))

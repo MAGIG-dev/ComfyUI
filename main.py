@@ -73,7 +73,7 @@ if __name__ == "__main__":
     import cuda_malloc
 
 import comfy.utils
-import yaml
+import yaml  # type: ignore
 
 import execution
 from nodes import init_custom_nodes
