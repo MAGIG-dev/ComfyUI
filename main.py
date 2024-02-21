@@ -327,6 +327,8 @@ def run_with_server():
 
 
 def run_workflow_only():
+    server = PromptServer()
+
     if args.temp_directory:
         temp_dir = os.path.join(os.path.abspath(args.temp_directory), "temp")
         print(f"Setting temp directory to: {temp_dir}")

@@ -67,7 +67,7 @@ def create_cors_middleware(allowed_origin: str):
     return cors_middleware
 
 class PromptServer():
-    def __init__(self, loop):
+    def __init__(self, loop = None):
         PromptServer.instance = self
 
         mimetypes.init()
@@ -615,8 +615,9 @@ class PromptServer():
             await send_socket_catch_exception(self.sockets[sid].send_json, message)
 
     def send_sync(self, event, data, sid=None):
-        self.loop.call_soon_threadsafe(
-            self.messages.put_nowait, (event, data, sid))
+        if self.loop:
+            self.loop.call_soon_threadsafe(
+                self.messages.put_nowait, (event, data, sid))
 
     def queue_updated(self):
         self.send_sync("status", { "status": self.get_queue_info() })
