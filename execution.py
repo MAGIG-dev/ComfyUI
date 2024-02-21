@@ -265,7 +265,7 @@ def recursive_output_delete_if_changed(prompt, old_prompt, outputs, current_item
     return to_delete
 
 class PromptExecutor:
-    def __init__(self, server):
+    def __init__(self, server = None):
         self.server = server
         self.reset()
 
@@ -278,6 +278,9 @@ class PromptExecutor:
         self.old_prompt = {}
 
     def add_message(self, event, data, broadcast: bool):
+        if self.server == None:
+            return
+        
         self.status_messages.append((event, data))
         if self.server.client_id is not None or broadcast:
             self.server.send_sync(event, data, self.server.client_id)
@@ -326,10 +329,11 @@ class PromptExecutor:
     def execute(self, prompt, prompt_id, extra_data={}, execute_outputs=[]):
         nodes.interrupt_processing(False)
 
-        if "client_id" in extra_data:
-            self.server.client_id = extra_data["client_id"]
-        else:
-            self.server.client_id = None
+        if self.server is not None:
+            if "client_id" in extra_data:
+                self.server.client_id = extra_data["client_id"]
+            else:
+                self.server.client_id = None
 
         self.status_messages = []
         self.add_message("execution_start", { "prompt_id": prompt_id}, broadcast=False)
@@ -390,7 +394,10 @@ class PromptExecutor:
 
             for x in executed:
                 self.old_prompt[x] = copy.deepcopy(prompt[x])
-            self.server.last_node_id = None
+
+            if self.server is not None:
+                self.server.last_node_id = None
+
             if comfy.model_management.DISABLE_SMART_MEMORY:
                 comfy.model_management.unload_all_models()
 

@@ -154,8 +154,7 @@ if __name__ == "__main__":
     cuda_malloc_warning()
 
     # TODO: load some prompt
-    prompt = {}
-    prompt_worker(prompt, "0")
+    prompt_worker({}, "0")
 
     if args.output_directory:
         output_dir = os.path.abspath(args.output_directory)
