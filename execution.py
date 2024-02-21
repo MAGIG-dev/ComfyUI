@@ -5,7 +5,7 @@ import threading
 import heapq
 import traceback
 import inspect
-from typing import List, Literal, NamedTuple, Optional
+from typing import Any, List, Literal, NamedTuple, Optional
 
 import torch
 import nodes
@@ -117,7 +117,7 @@ def format_value(x):
     else:
         return str(x)
 
-def recursive_execute(server, prompt, outputs, current_item, extra_data, executed, prompt_id, outputs_ui, object_storage):
+def recursive_execute(server: Any | None, prompt, outputs, current_item, extra_data, executed, prompt_id, outputs_ui, object_storage):
     unique_id = current_item
     inputs = prompt[unique_id]['inputs']
     class_type = prompt[unique_id]['class_type']
@@ -285,7 +285,7 @@ class PromptExecutor:
         self.old_prompt = {}
 
     def add_message(self, event, data, broadcast: bool):
-        if self.server == None:
+        if self.server is None:
             print(f"Message: {event} {data}")
             return
         
