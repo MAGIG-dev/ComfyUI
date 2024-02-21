@@ -5,8 +5,12 @@ supported_pt_extensions = set(['.ckpt', '.pt', '.bin', '.pth', '.safetensors'])
 
 folder_names_and_paths = {}
 
-base_path = os.path.dirname(os.path.realpath(__file__))
+comfy_path = os.path.dirname(os.path.realpath(__file__))
+base_path = "/home/ubuntu/projects/comfy_ui_cache"
 models_dir = os.path.join(base_path, "models")
+
+folder_names_and_paths["custom_nodes"] = ([os.path.join(base_path, "custom_nodes"), os.path.join(comfy_path, "custom_nodes")], [])
+
 folder_names_and_paths["checkpoints"] = ([os.path.join(models_dir, "checkpoints")], supported_pt_extensions)
 folder_names_and_paths["configs"] = ([os.path.join(models_dir, "configs")], [".yaml"])
 
@@ -24,8 +28,6 @@ folder_names_and_paths["controlnet"] = ([os.path.join(models_dir, "controlnet"),
 folder_names_and_paths["gligen"] = ([os.path.join(models_dir, "gligen")], supported_pt_extensions)
 
 folder_names_and_paths["upscale_models"] = ([os.path.join(models_dir, "upscale_models")], supported_pt_extensions)
-
-folder_names_and_paths["custom_nodes"] = ([os.path.join(base_path, "custom_nodes")], [])
 
 folder_names_and_paths["hypernetworks"] = ([os.path.join(models_dir, "hypernetworks")], supported_pt_extensions)
 
