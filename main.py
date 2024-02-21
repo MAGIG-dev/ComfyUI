@@ -153,9 +153,6 @@ if __name__ == "__main__":
     init_custom_nodes()
     cuda_malloc_warning()
 
-    # TODO: load some prompt
-    prompt_worker({}, "0")
-
     if args.output_directory:
         output_dir = os.path.abspath(args.output_directory)
         print(f"Setting output directory to: {output_dir}")
@@ -176,5 +173,9 @@ if __name__ == "__main__":
         input_dir = os.path.abspath(args.input_directory)
         print(f"Setting input directory to: {input_dir}")
         folder_paths.set_input_directory(input_dir)
+
+    with open(args.workflow, "r") as f:
+        workflow = yaml.safe_load(f)
+        prompt_worker(workflow, "0")
 
     cleanup_temp()
