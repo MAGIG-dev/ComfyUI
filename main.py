@@ -58,10 +58,21 @@ execute_prestartup_script()
 
 
 # Main code
+import asyncio
 import itertools
 import shutil
+import threading
+import gc
 
 from comfy.cli_args import args
+
+if os.name == "nt":
+    import logging
+
+    logging.getLogger("xformers").addFilter(
+        lambda record: "A matching Triton is not available" not in record.getMessage()
+    )
+
 
 if __name__ == "__main__":
     if args.cuda_device is not None:
@@ -78,6 +89,7 @@ import comfy.utils
 import yaml  # type: ignore
 
 import execution
+from server import PromptServer, BinaryEventTypes
 from nodes import init_custom_nodes
 import comfy.model_management
 
@@ -96,7 +108,96 @@ def cuda_malloc_warning():
             )
 
 
-def prompt_worker(prompt, prompt_id, extra_data={}, execute_outputs=[]):
+def prompt_worker(q, server):
+    e = execution.PromptExecutor(server)
+    last_gc_collect = 0
+    need_gc = False
+    gc_collect_interval = 10.0
+
+    while True:
+        timeout = 1000.0
+        if need_gc:
+            timeout = max(gc_collect_interval - (current_time - last_gc_collect), 0.0)
+
+        queue_item = q.get(timeout=timeout)
+        if queue_item is not None:
+            item, item_id = queue_item
+            execution_start_time = time.perf_counter()
+            prompt_id = item[1]
+            server.last_prompt_id = prompt_id
+
+            e.execute(item[2], prompt_id, item[3], item[4])
+            need_gc = True
+            q.task_done(
+                item_id,
+                e.outputs_ui,
+                status=execution.PromptQueue.ExecutionStatus(
+                    status_str="success" if e.success else "error",
+                    completed=e.success,
+                    messages=e.status_messages,
+                ),
+            )
+            if server.client_id is not None:
+                server.send_sync(
+                    "executing",
+                    {"node": None, "prompt_id": prompt_id},
+                    server.client_id,
+                )
+
+            current_time = time.perf_counter()
+            execution_time = current_time - execution_start_time
+            print("Prompt executed in {:.2f} seconds".format(execution_time))
+
+        flags = q.get_flags()
+        free_memory = flags.get("free_memory", False)
+
+        if flags.get("unload_models", free_memory):
+            comfy.model_management.unload_all_models()
+            need_gc = True
+            last_gc_collect = 0
+
+        if free_memory:
+            e.reset()
+            need_gc = True
+            last_gc_collect = 0
+
+        if need_gc:
+            current_time = time.perf_counter()
+            if (current_time - last_gc_collect) > gc_collect_interval:
+                gc.collect()
+                comfy.model_management.soft_empty_cache()
+                last_gc_collect = current_time
+                need_gc = False
+
+
+async def run(server, address="", port=8188, verbose=True, call_on_start=None):
+    await asyncio.gather(
+        server.start(address, port, verbose, call_on_start), server.publish_loop()
+    )
+
+
+def hijack_progress(server):
+    def hook(value, total, preview_image):
+        comfy.model_management.throw_exception_if_processing_interrupted()
+        progress = {
+            "value": value,
+            "max": total,
+            "prompt_id": server.last_prompt_id,
+            "node": server.last_node_id,
+        }
+
+        server.send_sync("progress", progress, server.client_id)
+        if preview_image is not None:
+            server.send_sync(
+                BinaryEventTypes.UNENCODED_PREVIEW_IMAGE,
+                preview_image,
+                server.client_id,
+            )
+
+    comfy.utils.set_progress_bar_global_hook(hook)
+
+
+def run_workflow(prompt, prompt_id, extra_data={}, execute_outputs=[]):
     execution_start_time = time.perf_counter()
     e = execution.PromptExecutor()
 
@@ -135,7 +236,97 @@ def load_extra_path_config(yaml_path):
                 folder_paths.add_model_folder_path(x, full_path)
 
 
-if __name__ == "__main__":
+def run_with_server():
+    if args.temp_directory:
+        temp_dir = os.path.join(os.path.abspath(args.temp_directory), "temp")
+        print(f"Setting temp directory to: {temp_dir}")
+        folder_paths.set_temp_directory(temp_dir)
+    cleanup_temp()
+
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    server = PromptServer(loop)
+    q = execution.PromptQueue(server)
+
+    extra_model_paths_config_path = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), "extra_model_paths.yaml"
+    )
+    if os.path.isfile(extra_model_paths_config_path):
+        load_extra_path_config(extra_model_paths_config_path)
+
+    if args.extra_model_paths_config:
+        for config_path in itertools.chain(*args.extra_model_paths_config):
+            load_extra_path_config(config_path)
+
+    init_custom_nodes()
+
+    cuda_malloc_warning()
+
+    server.add_routes()
+    hijack_progress(server)
+
+    threading.Thread(
+        target=prompt_worker,
+        daemon=True,
+        args=(
+            q,
+            server,
+        ),
+    ).start()
+
+    if args.output_directory:
+        output_dir = os.path.abspath(args.output_directory)
+        print(f"Setting output directory to: {output_dir}")
+        folder_paths.set_output_directory(output_dir)
+
+    # These are the default folders that checkpoints, clip and vae models will be saved to when using CheckpointSave, etc.. nodes
+    folder_paths.add_model_folder_path(
+        "checkpoints", os.path.join(folder_paths.get_output_directory(), "checkpoints")
+    )
+    folder_paths.add_model_folder_path(
+        "clip", os.path.join(folder_paths.get_output_directory(), "clip")
+    )
+    folder_paths.add_model_folder_path(
+        "vae", os.path.join(folder_paths.get_output_directory(), "vae")
+    )
+
+    if args.input_directory:
+        input_dir = os.path.abspath(args.input_directory)
+        print(f"Setting input directory to: {input_dir}")
+        folder_paths.set_input_directory(input_dir)
+
+    if args.quick_test_for_ci:
+        exit(0)
+
+    call_on_start = None
+    if args.auto_launch:
+
+        def startup_server(address, port):
+            import webbrowser
+
+            if os.name == "nt" and address == "0.0.0.0":
+                address = "127.0.0.1"
+            webbrowser.open(f"http://{address}:{port}")
+
+        call_on_start = startup_server
+
+    try:
+        loop.run_until_complete(
+            run(
+                server,
+                address=args.listen,
+                port=args.port,
+                verbose=not args.dont_print_server,
+                call_on_start=call_on_start,
+            )
+        )
+    except KeyboardInterrupt:
+        print("\nStopped server")
+
+    cleanup_temp()
+
+
+def run_workflow_only():
     if args.temp_directory:
         temp_dir = os.path.join(os.path.abspath(args.temp_directory), "temp")
         print(f"Setting temp directory to: {temp_dir}")
@@ -183,9 +374,16 @@ if __name__ == "__main__":
         if valid[0]:
             prompt_id = str(uuid.uuid4())
             outputs_to_execute = valid[2]
-            prompt_worker(workflow, prompt_id, {}, outputs_to_execute)
+            run_workflow(workflow, prompt_id, {}, outputs_to_execute)
         else:
             print("invalid prompt:", valid[1])
             print("node errors:", valid[3])
 
     cleanup_temp()
+
+
+if __name__ == "__main__":
+    if args.workflow:
+        run_workflow_only()
+    else:
+        run_with_server()
