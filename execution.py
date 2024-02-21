@@ -324,6 +324,11 @@ class PromptExecutor:
             del d
 
     def execute(self, prompt, prompt_id, extra_data={}, execute_outputs=[]):
+        print(f"prompt: {prompt}")
+        print(f"prompt_id: {prompt_id}")
+        print(f"extra_data: {extra_data}")
+        print(f"execute_outputs: {execute_outputs}")
+        
         nodes.interrupt_processing(False)
 
         if "client_id" in extra_data:
