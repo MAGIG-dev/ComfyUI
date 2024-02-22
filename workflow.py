@@ -10,14 +10,14 @@ from torchvision.datasets.utils import download_url  # type: ignore
 def run_workflow(workflow_file: str, new_base_path: str | None):
     with open(workflow_file, "r") as f:
         workflow = yaml.safe_load(f)
+
+        if new_base_path:
+            adjust_folder_names_and_paths(new_base_path)
+        download_missing_models(workflow)
+
         valid = execution.validate_prompt(workflow)
 
         if valid[0]:
-            if new_base_path:
-                adjust_folder_names_and_paths(new_base_path)
-
-            download_missing_models(workflow)
-
             prompt_id = str(uuid.uuid4())
             outputs_to_execute = valid[2]
 
