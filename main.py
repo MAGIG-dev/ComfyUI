@@ -236,7 +236,7 @@ if __name__ == "__main__":
         exit(0)
 
     if args.workflow:
-        run_workflow(args.workflow)
+        run_workflow(args.workflow, args.base_path)
     else:
         call_on_start = None
         if args.auto_launch:
