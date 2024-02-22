@@ -67,7 +67,8 @@ def download_missing_models(workflow, extra_models: list[str] = []):
 
     # Download models
 
-    with open("model-list.json", "r") as f:
+    this_dir = os.path.dirname(os.path.realpath(__file__))
+    with open(os.path.join(this_dir, "model-list.json"), "r") as f:
         model_list = yaml.safe_load(f)["models"]
 
         entries = []
