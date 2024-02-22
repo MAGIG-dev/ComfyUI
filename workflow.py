@@ -182,6 +182,7 @@ def adjust_folder_names_and_paths(new_base_path: str):
                 os.path.join(folder_paths.base_path, "custom_nodes")
             )
 
+    print(f"Switching base_path from {folder_paths.base_path} to {new_base_path}")
     folder_paths.base_path = new_base_path
-    print(folder_paths.folder_names_and_paths, "\n")
+
     return
