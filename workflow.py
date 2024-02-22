@@ -83,10 +83,11 @@ def download_missing_models(workflow, extra_models: list[str] = []):
             )
 
         for entry in entries:
-            filepath = os.path.join(get_model_dir(entry), entry["name"])
+            model_dir = get_model_dir(entry)
+            filepath = os.path.join(model_dir, entry["name"])
             print(f"Downloading {entry['name']} --> {filepath}")
 
-            download_url(entry["url"], filepath, filename=entry["filename"])
+            download_url(entry["url"], model_dir, filename=entry["filename"])
 
 
 # This function finds all the models used in a workflow by scanning the
