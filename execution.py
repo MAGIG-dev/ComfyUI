@@ -5,7 +5,7 @@ import threading
 import heapq
 import traceback
 import inspect
-from typing import Any, List, Literal, NamedTuple, Optional
+from typing import List, Literal, NamedTuple, Optional
 
 import torch
 import nodes
@@ -117,7 +117,7 @@ def format_value(x):
     else:
         return str(x)
 
-def recursive_execute(server: Any | None, prompt, outputs, current_item, extra_data, executed, prompt_id, outputs_ui, object_storage):
+def recursive_execute(server, prompt, outputs, current_item, extra_data, executed, prompt_id, outputs_ui, object_storage):
     unique_id = current_item
     inputs = prompt[unique_id]['inputs']
     class_type = prompt[unique_id]['class_type']
@@ -340,11 +340,6 @@ class PromptExecutor:
             del d
 
     def execute(self, prompt, prompt_id, extra_data={}, execute_outputs=[]):
-        print(f"prompt: {prompt}")
-        print(f"prompt_id: {prompt_id}")
-        print(f"extra_data: {extra_data}")
-        print(f"execute_outputs: {execute_outputs}")
-        
         nodes.interrupt_processing(False)
 
         if self.server is not None:
