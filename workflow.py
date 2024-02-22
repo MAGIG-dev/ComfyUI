@@ -13,6 +13,7 @@ def run_workflow(workflow_file: str):
         valid = execution.validate_prompt(workflow)
 
         if valid[0]:
+            adjust_folder_names_and_paths(folder_paths.base_path)
             download_missing_models(workflow)
 
             prompt_id = str(uuid.uuid4())
@@ -178,5 +179,6 @@ def adjust_folder_names_and_paths(new_base_path: str):
                 os.path.join(folder_paths.base_path, "custom_nodes")
             )
 
+    folder_paths.base_path = new_base_path
     print(folder_paths.folder_names_and_paths, "\n")
     return
