@@ -25,6 +25,8 @@ def run_workflow(workflow_file: str, new_base_path: str | None):
         if new_base_path:
             adjust_folder_names_and_paths(new_base_path)
 
+        install_missing_nodes(workflow)
+
         download_missing_models(
             workflow,
             ["pixelart_vgg19.pth", "160_net_G_A.pth", "alias_net.pth"],
@@ -49,8 +51,6 @@ def run_workflow(workflow_file: str, new_base_path: str | None):
                 },
             ],
         )
-
-        install_missing_nodes(workflow)
 
         valid = execution.validate_prompt(workflow)
 
