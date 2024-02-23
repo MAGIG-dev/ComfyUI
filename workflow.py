@@ -216,8 +216,9 @@ def try_install_script(cmd, cwd="."):
     subprocess.run(args=cmd, cwd=cwd, check=True)
 
 
-def download_missing_models(workflow, extra_models: list[str] = []):
-
+def download_missing_models(
+    workflow, extra_models: list[str] = [], extra_models_info: list[dict] = []
+):
     # Find required models for workflow
 
     models = find_used_models(workflow)
@@ -251,6 +252,7 @@ def download_missing_models(workflow, extra_models: list[str] = []):
     this_dir = os.path.dirname(os.path.realpath(__file__))
     with open(os.path.join(this_dir, "model-list.json"), "r") as f:
         model_list = yaml.safe_load(f)["models"]
+        model_list.extend(extra_models_info)
 
         entries = []
         for model_entry in model_list:
@@ -275,8 +277,8 @@ def download_missing_models(workflow, extra_models: list[str] = []):
             download_url(entry["url"], model_dir, filename=entry["filename"])
 
 
-# This function finds all the models used in a workflow by scanning the
-# inputs of each node and checking it against a list of filetypes
+# This function finds all the models used in a workflow by scanning the inputs
+# of each node and checking it against a list of filetypes
 def find_used_models(workflow) -> list[str]:
     scan_for_filetypes = folder_paths.supported_pt_extensions
     models = []
@@ -292,7 +294,6 @@ def find_used_models(workflow) -> list[str]:
     return models
 
 
-# Taken from ComfyUI Manager
 # extracts the directory in which the model should be saved
 def get_model_dir(entry):
     if entry["save_path"] != "default":
@@ -340,8 +341,8 @@ def get_model_dir(entry):
     return dir
 
 
-# We do this because ComfyUI Manager uses the first path in the `folder_names_and_paths` dictionary
-# to save models and custom nodes
+# We do this because the get_model_dir function uses the first path in the
+# `folder_names_and_paths` dictionary to save models and custom nodes
 def adjust_folder_names_and_paths(new_base_path: str):
     if folder_paths.base_path == new_base_path:
         return
@@ -355,12 +356,6 @@ def adjust_folder_names_and_paths(new_base_path: str):
 
             folder_paths.folder_names_and_paths[category][0][i] = folder.replace(
                 folder_paths.base_path, new_base_path
-            )
-
-        # add back in original custom nodes folder for ComfyUI Manager installation
-        if category == "custom_nodes":
-            folder_paths.folder_names_and_paths[category][0].append(
-                os.path.join(folder_paths.base_path, "custom_nodes")
             )
 
     print(f"Switching base_path from {folder_paths.base_path} to {new_base_path}")
