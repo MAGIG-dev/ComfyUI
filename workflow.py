@@ -67,42 +67,51 @@ def install_missing_nodes(workflow, extra_nodes: list[str] = []):
     # Install missing nodes
 
     this_dir = os.path.dirname(os.path.realpath(__file__))
-    with open(os.path.join(this_dir, "custom-node-list.json"), "r") as f:
-        custom_nodes = yaml.safe_load(f)["custom_nodes"]
 
-        entries = []
-        for node_entry in custom_nodes:
-            for node in missing_nodes:
-                if node_entry["title"] == node:
-                    entries.append(node_entry)
+    with open(os.path.join(this_dir, "custom-node-list.json"), "r") as a:
+        with open(os.path.join(this_dir, "extension-node-map.json"), "r") as b:
+            package_db = yaml.safe_load(a)["custom_nodes"]
+            package_node_map = yaml.safe_load(b)
 
-        nodes_not_found = list(
-            set(missing_nodes) - set([entry["title"] for entry in entries])
-        )
+            packages_to_download = []
+            for url in package_node_map:
+                for node_name in missing_nodes:
+                    if node_name in package_node_map[url][0]:
+                        package_name = package_node_map[url][1]["title_aux"]
+                        packages_to_download.append(package_name)
 
-        if len(nodes_not_found) > 0:
-            raise Exception(
-                f"Could not find download info for missing nodes: {nodes_not_found}"
+            entries = []
+            for entry in package_db:
+                if entry["title"] in packages_to_download:
+                    entries.append(entry)
+
+            nodes_not_found = list(
+                set(packages_to_download) - set([entry["title"] for entry in entries])
             )
 
-        for entry in entries:
-            install_type = entry["install_type"]
+            if len(nodes_not_found) > 0:
+                raise Exception(
+                    f"Could not find download info for missing nodes: {nodes_not_found}"
+                )
 
-            if install_type == "unzip":
-                unzip_install(entry["files"])
+            for entry in entries:
+                install_type = entry["install_type"]
 
-            if install_type == "copy":
-                copy_install(entry["files"])
+                if install_type == "unzip":
+                    unzip_install(entry["files"])
 
-            if install_type == "git-clone":
-                gitclone_install(entry["files"])
+                if install_type == "copy":
+                    copy_install(entry["files"])
 
-            if "pip" in entry:
-                for pname in entry["pip"]:
-                    install_cmd = [sys.executable, "-m", "pip", "install", pname]
-                    try_install_script(install_cmd)
+                if install_type == "git-clone":
+                    gitclone_install(entry["files"])
 
-        nodes.load_custom_nodes(log=True)
+                if "pip" in entry:
+                    for pname in entry["pip"]:
+                        install_cmd = [sys.executable, "-m", "pip", "install", pname]
+                        try_install_script(install_cmd)
+
+            nodes.load_custom_nodes(log=True)
 
 
 def find_missing_nodes(workflow):
@@ -221,17 +230,17 @@ def download_missing_models(
 ):
     # Find required models for workflow
 
-    models = find_used_models(workflow)
-    models.extend(extra_models)
+    used_models = find_used_models(workflow)
+    used_models.extend(extra_models)
 
-    print(f"Required models for workflow: {models}")
+    print(f"Required models for workflow: {used_models}")
 
     # Check if models already exist anywhere in the folder paths
 
     models_to_download = []
     skip_checking_categories = ["custom_nodes"]
 
-    for model_name in models:
+    for model_name in used_models:
         exists = any(
             os.path.exists(os.path.join(folder, model_name))
             for category in folder_paths.folder_names_and_paths
@@ -251,14 +260,13 @@ def download_missing_models(
 
     this_dir = os.path.dirname(os.path.realpath(__file__))
     with open(os.path.join(this_dir, "model-list.json"), "r") as f:
-        model_list = yaml.safe_load(f)["models"]
-        model_list.extend(extra_models_info)
+        model_db = yaml.safe_load(f)["models"]
+        model_db.extend(extra_models_info)
 
         entries = []
-        for model_entry in model_list:
-            for model_name in models_to_download:
-                if model_entry["name"] == model_name:
-                    entries.append(model_entry)
+        for entry in model_db:
+            if entry["name"] in models_to_download:
+                entries.append(entry)
 
         models_not_found = list(
             set(models_to_download) - set([entry["name"] for entry in entries])
