@@ -76,18 +76,6 @@ def is_api_workflow(workflow) -> bool:
     return all("class_type" in node for node in workflow.values())
 
 
-def find_missing_nodes(workflow):
-    missing_nodes = []
-
-    for node in workflow.values():
-        type = node["class_type"]
-        all_node_types = nodes.NODE_CLASS_MAPPINGS.keys()
-        if type not in all_node_types:
-            missing_nodes.append(type)
-
-    return missing_nodes
-
-
 def install_missing_nodes(workflow, extra_nodes: list[str] = []):
 
     # Find missing nodes for workflow
@@ -138,7 +126,19 @@ def install_missing_nodes(workflow, extra_nodes: list[str] = []):
                     install_cmd = [sys.executable, "-m", "pip", "install", pname]
                     try_install_script(install_cmd)
 
-        nodes.load_custom_nodes()
+        nodes.load_custom_nodes(log=True)
+
+
+def find_missing_nodes(workflow):
+    missing_nodes = []
+
+    for node in workflow.values():
+        type = node["class_type"]
+        all_node_types = nodes.NODE_CLASS_MAPPINGS.keys()
+        if type not in all_node_types:
+            missing_nodes.append(type)
+
+    return missing_nodes
 
 
 def unzip_install(files: list[str]):
