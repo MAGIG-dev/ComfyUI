@@ -77,7 +77,6 @@ def is_api_workflow(workflow) -> bool:
 
 
 def install_missing_nodes(workflow, extra_nodes: list[str] = []):
-
     # Find missing nodes for workflow
 
     missing_nodes = find_missing_nodes(workflow)
