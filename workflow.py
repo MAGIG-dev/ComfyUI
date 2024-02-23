@@ -1,9 +1,15 @@
 import os
+import git
+import sys
 import uuid
 import time
 import yaml  # type: ignore
+import nodes
+import zipfile
 import execution
+import subprocess
 import folder_paths
+import urllib.request
 from torchvision.datasets.utils import download_url  # type: ignore
 
 
@@ -11,9 +17,16 @@ def run_workflow(workflow_file: str, new_base_path: str | None):
     with open(workflow_file, "r") as f:
         workflow = yaml.safe_load(f)
 
+        if not is_api_workflow(workflow):
+            raise Exception(
+                "Workflow is in the wrong format. Please use the API format."
+            )
+
         if new_base_path:
             adjust_folder_names_and_paths(new_base_path)
+
         download_missing_models(workflow)
+        install_missing_nodes(workflow)
 
         valid = execution.validate_prompt(workflow)
 
@@ -33,6 +46,178 @@ def run_workflow(workflow_file: str, new_base_path: str | None):
         else:
             print("invalid prompt:", valid[1])
             print("node errors:", valid[3])
+
+
+def is_api_workflow(workflow) -> bool:
+    return all("class_type" in node for node in workflow.values())
+
+
+def find_missing_nodes(workflow):
+    missing_nodes = []
+
+    for node in workflow.values():
+        type = node["class_type"]
+        all_node_types = nodes.NODE_CLASS_MAPPINGS.keys()
+        if type not in all_node_types:
+            missing_nodes.append(type)
+
+    return missing_nodes
+
+
+def install_missing_nodes(workflow, extra_nodes: list[str] = []):
+
+    # Find missing nodes for workflow
+
+    missing_nodes = find_missing_nodes(workflow)
+    missing_nodes.extend(extra_nodes)
+
+    if len(missing_nodes) == 0:
+        return
+
+    print(f"Missing nodes for workflow: {missing_nodes}")
+
+    # Install missing nodes
+
+    this_dir = os.path.dirname(os.path.realpath(__file__))
+    with open(os.path.join(this_dir, "custom-node-list.json"), "r") as f:
+        custom_nodes = yaml.safe_load(f)["custom_nodes"]
+
+        entries = []
+        for node_entry in custom_nodes:
+            for node in missing_nodes:
+                if node_entry["title"] == node:
+                    entries.append(node_entry)
+
+        nodes_not_found = list(
+            set(missing_nodes) - set([entry["title"] for entry in entries])
+        )
+
+        if len(nodes_not_found) > 0:
+            raise Exception(
+                f"Could not find download info for missing nodes: {nodes_not_found}"
+            )
+
+        for entry in entries:
+            install_type = entry["install_type"]
+
+            if install_type == "unzip":
+                unzip_install(entry["files"])
+
+            if install_type == "copy":
+                copy_install(entry["files"])
+
+            if install_type == "git-clone":
+                gitclone_install(entry["files"])
+
+            if "pip" in entry:
+                for pname in entry["pip"]:
+                    install_cmd = [sys.executable, "-m", "pip", "install", pname]
+                    try_install_script(install_cmd)
+
+        nodes.load_custom_nodes()
+
+
+def unzip_install(files: list[str]):
+    temp_filename = "manager-temp.zip"
+    for url in files:
+        if url.endswith("/"):
+            url = url[:-1]
+        try:
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
+            }
+
+            req = urllib.request.Request(url, headers=headers)
+            response = urllib.request.urlopen(req)
+            data = response.read()
+
+            with open(temp_filename, "wb") as f:
+                f.write(data)
+
+            with zipfile.ZipFile(temp_filename, "r") as zip_ref:
+                zip_ref.extractall(
+                    folder_paths.folder_names_and_paths["custom_nodes"][0][0]
+                )
+
+            os.remove(temp_filename)
+        except Exception as e:
+            print(f"Install(unzip) error: {url}", file=sys.stderr)
+            raise e
+
+    print("Installation was successful.")
+
+
+def copy_install(files: list[str]):
+    for url in files:
+        if url.endswith("/"):
+            url = url[:-1]
+        try:
+            if url.endswith(".py"):
+                download_url(
+                    url, folder_paths.folder_names_and_paths["custom_nodes"][0][0]
+                )
+
+        except Exception as e:
+            print(f"Install(copy) error: {url}", file=sys.stderr)
+            raise e
+
+    print("Installation was successful.")
+
+
+def gitclone_install(files):
+    for url in files:
+        if url.endswith("/"):
+            url = url[:-1]
+        try:
+            repo_name = os.path.splitext(os.path.basename(url))[0]
+            repo_path = os.path.join(
+                folder_paths.folder_names_and_paths["custom_nodes"][0][0], repo_name
+            )
+
+            # Clone the repository from the remote URL
+            repo = git.Repo.clone_from(url, repo_path, recursive=True)
+            repo.git.clear_cache()
+            repo.close()
+
+            print(f"Cloned repository {url} to {repo_path}")
+
+            execute_install_script(url, repo_path)
+
+        except Exception as e:
+            print(f"Install(git-clone) error: {url}", file=sys.stderr)
+            raise e
+
+
+def execute_install_script(url, repo_path, lazy_mode=False):
+    install_script_path = os.path.join(repo_path, "install.py")
+    requirements_path = os.path.join(repo_path, "requirements.txt")
+
+    if lazy_mode:
+        install_cmd = ["#LAZY-INSTALL-SCRIPT", sys.executable]
+        try_install_script(install_cmd, repo_path)
+    else:
+        if os.path.exists(requirements_path):
+            with open(requirements_path, "r") as requirements_file:
+                for line in requirements_file:
+                    package_name = line.strip()
+                    if package_name:
+                        install_cmd = [
+                            sys.executable,
+                            "-m",
+                            "pip",
+                            "install",
+                            package_name,
+                        ]
+                        if package_name.strip() != "":
+                            try_install_script(install_cmd, repo_path)
+
+        if os.path.exists(install_script_path):
+            install_cmd = [sys.executable, "install.py"]
+            try_install_script(install_cmd, repo_path)
+
+
+def try_install_script(cmd, cwd="."):
+    subprocess.run(args=cmd, cwd=cwd, check=True)
 
 
 def download_missing_models(workflow, extra_models: list[str] = []):
@@ -77,13 +262,13 @@ def download_missing_models(workflow, extra_models: list[str] = []):
                 if model_entry["name"] == model_name:
                     entries.append(model_entry)
 
-        missing_models = list(
+        models_not_found = list(
             set(models_to_download) - set([entry["name"] for entry in entries])
         )
 
-        if len(missing_models) > 0:
+        if len(models_not_found) > 0:
             raise Exception(
-                f"Could not find download info for required models: {missing_models}"
+                f"Could not find download info for required models: {models_not_found}"
             )
 
         for entry in entries:

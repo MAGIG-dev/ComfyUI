@@ -1870,6 +1870,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
 EXTENSION_WEB_DIRS = {}
 
 def load_custom_node(module_path, ignore=set()):
+    print(f"loading custom nodes at {module_path}")
     module_name = os.path.basename(module_path)
     if os.path.isfile(module_path):
         sp = os.path.splitext(module_path)
@@ -1895,6 +1896,7 @@ def load_custom_node(module_path, ignore=set()):
             for name in module.NODE_CLASS_MAPPINGS:
                 if name not in ignore:
                     NODE_CLASS_MAPPINGS[name] = module.NODE_CLASS_MAPPINGS[name]
+                    print(f"    adding {name}")
             if hasattr(module, "NODE_DISPLAY_NAME_MAPPINGS") and getattr(module, "NODE_DISPLAY_NAME_MAPPINGS") is not None:
                 NODE_DISPLAY_NAME_MAPPINGS.update(module.NODE_DISPLAY_NAME_MAPPINGS)
             return True
