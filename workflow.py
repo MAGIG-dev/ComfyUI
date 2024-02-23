@@ -80,18 +80,20 @@ def install_missing_nodes(workflow, extra_nodes: list[str] = []):
                         package_name = package_node_map[url][1]["title_aux"]
                         packages_to_download.append(package_name)
 
+            print(f"Packages to install: {packages_to_download}")
+
             entries = []
             for entry in package_db:
                 if entry["title"] in packages_to_download:
                     entries.append(entry)
 
-            nodes_not_found = list(
+            packages_not_found = list(
                 set(packages_to_download) - set([entry["title"] for entry in entries])
             )
 
-            if len(nodes_not_found) > 0:
+            if len(packages_not_found) > 0:
                 raise Exception(
-                    f"Could not find download info for missing nodes: {nodes_not_found}"
+                    f"Could not find download info for missing nodes: {packages_not_found}"
                 )
 
             for entry in entries:
