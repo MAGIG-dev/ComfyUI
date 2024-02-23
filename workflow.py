@@ -25,7 +25,31 @@ def run_workflow(workflow_file: str, new_base_path: str | None):
         if new_base_path:
             adjust_folder_names_and_paths(new_base_path)
 
-        download_missing_models(workflow)
+        download_missing_models(
+            workflow,
+            ["pixelart_vgg19.pth", "160_net_G_A.pth", "alias_net.pth"],
+            [
+                {
+                    "name": "pixelart_vgg19.pth",
+                    "save_path": "custom_nodes/comfy_pixelization/checkpoints",
+                    "filename": "pixelart_vgg19.pth",
+                    "url": "https://drive.google.com/uc?id=1VRYKQOsNlE1w1LXje3yTRU5THN2MGdMM",
+                },
+                {
+                    "name": "160_net_G_A.pth",
+                    "save_path": "custom_nodes/comfy_pixelization/checkpoints",
+                    "filename": "160_net_G_A.pth",
+                    "url": "https://drive.google.com/uc?id=1i_8xL3stbLWNF4kdQJ50ZhnRFhSDh3Az",
+                },
+                {
+                    "name": "alias_net.pth",
+                    "save_path": "custom_nodes/comfy_pixelization/checkpoints",
+                    "filename": "alias_net.pth",
+                    "url": "https://drive.google.com/uc?id=17f2rKnZOpnO9ATwRXgqLz5u5AZsyDvq_",
+                },
+            ],
+        )
+
         install_missing_nodes(workflow)
 
         valid = execution.validate_prompt(workflow)
