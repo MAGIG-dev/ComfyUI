@@ -181,39 +181,35 @@ def gitclone_install(files):
 
             print(f"Cloned repository {url} to {repo_path}")
 
-            execute_install_script(url, repo_path)
+            execute_install_script(repo_path)
 
         except Exception as e:
             print(f"Install(git-clone) error: {url}", file=sys.stderr)
             raise e
 
 
-def execute_install_script(url, repo_path, lazy_mode=False):
+def execute_install_script(repo_path):
     install_script_path = os.path.join(repo_path, "install.py")
     requirements_path = os.path.join(repo_path, "requirements.txt")
 
-    if lazy_mode:
-        install_cmd = ["#LAZY-INSTALL-SCRIPT", sys.executable]
-        try_install_script(install_cmd, repo_path)
-    else:
-        if os.path.exists(requirements_path):
-            with open(requirements_path, "r") as requirements_file:
-                for line in requirements_file:
-                    package_name = line.strip()
-                    if package_name:
-                        install_cmd = [
-                            sys.executable,
-                            "-m",
-                            "pip",
-                            "install",
-                            package_name,
-                        ]
-                        if package_name.strip() != "":
-                            try_install_script(install_cmd, repo_path)
+    if os.path.exists(requirements_path):
+        with open(requirements_path, "r") as requirements_file:
+            for line in requirements_file:
+                package_name = line.strip()
+                if package_name:
+                    install_cmd = [
+                        sys.executable,
+                        "-m",
+                        "pip",
+                        "install",
+                        package_name,
+                    ]
+                    if package_name.strip() != "":
+                        try_install_script(install_cmd, repo_path)
 
-        if os.path.exists(install_script_path):
-            install_cmd = [sys.executable, "install.py"]
-            try_install_script(install_cmd, repo_path)
+    if os.path.exists(install_script_path):
+        install_cmd = [sys.executable, "install.py"]
+        try_install_script(install_cmd, repo_path)
 
 
 def try_install_script(cmd, cwd="."):
