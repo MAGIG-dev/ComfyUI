@@ -24,6 +24,11 @@ def run_workflow(workflow_file: str, new_base_path: str | None):
 
         if new_base_path:
             adjust_folder_names_and_paths(new_base_path)
+
+            new_custom_nodes_path = os.path.join(folder_paths.base_path, "custom_nodes")
+            if not os.path.isdir(new_custom_nodes_path):
+                os.makedirs(new_custom_nodes_path)
+
             nodes.load_custom_nodes(log=True)
 
         install_missing_nodes(workflow)
