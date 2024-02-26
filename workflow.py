@@ -32,29 +32,18 @@ def run_workflow(workflow_file: str, new_base_path: str | None):
             nodes.load_custom_nodes()
 
         install_missing_nodes(workflow)
+
+        if new_base_path:
+            adjust_folder_names_and_paths(new_base_path)
+
         download_missing_models(
             workflow,
             [
                 {
-                    "name": "CLIP-ViT-H-14-laion2B-s32B-b79K",
-                    "type": "clip",
-                    "save_path": "default",
-                    "filename": "CLIP-ViT-H-14-laion2B-s32B-b79K.safetensors",
-                    "url": "https://huggingface.co/laion/CLIP-ViT-H-14-laion2B-s32B-b79K/resolve/main/model.safetensors?download=true",
-                },
-                {
-                    "name": "dreamshaperXL_v21TurboDPMSDE",
                     "type": "checkpoints",
                     "save_path": "default",
                     "filename": "dreamshaperXL_v21TurboDPMSDE.safetensors",
                     "url": "https://civitai.com/api/download/models/351306",
-                },
-                {
-                    "name": "control-lora-canny-rank256",
-                    "type": "loras",
-                    "save_path": "default",
-                    "filename": "control-lora-canny-rank256.safetensors",
-                    "url": "https://huggingface.co/stabilityai/control-lora/resolve/main/control-LoRAs-rank256/control-lora-canny-rank256.safetensors?download=true",
                 },
             ],
         )
@@ -297,11 +286,11 @@ def download_missing_models(workflow, extra_models: list[dict] = []):
 
         entries = []
         for entry in model_db:
-            if entry["name"] in models_to_download:
+            if entry["filename"] in models_to_download:
                 entries.append(entry)
 
         models_not_found = list(
-            set(models_to_download) - set([entry["name"] for entry in entries])
+            set(models_to_download) - set([entry["filename"] for entry in entries])
         )
 
         if len(models_not_found) > 0:
@@ -311,9 +300,6 @@ def download_missing_models(workflow, extra_models: list[dict] = []):
 
         for entry in entries:
             model_dir = get_model_dir(entry)
-            filepath = os.path.join(model_dir, entry["name"])
-            print(f"Downloading {entry['name']} --> {filepath}")
-
             download_url(entry["url"], model_dir, filename=entry["filename"])
 
 
