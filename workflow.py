@@ -29,10 +29,35 @@ def run_workflow(workflow_file: str, new_base_path: str | None):
             if not os.path.isdir(new_custom_nodes_path):
                 os.makedirs(new_custom_nodes_path)
 
-            nodes.load_custom_nodes(log=True)
+            nodes.load_custom_nodes()
 
         install_missing_nodes(workflow)
-        download_missing_models(workflow)
+        download_missing_models(
+            workflow,
+            [
+                {
+                    "name": "CLIP-ViT-H-14-laion2B-s32B-b79K",
+                    "type": "clip",
+                    "save_path": "default",
+                    "filename": "CLIP-ViT-H-14-laion2B-s32B-b79K.safetensors",
+                    "url": "https://huggingface.co/laion/CLIP-ViT-H-14-laion2B-s32B-b79K/resolve/main/model.safetensors?download=true",
+                },
+                {
+                    "name": "dreamshaperXL_v21TurboDPMSDE",
+                    "type": "checkpoints",
+                    "save_path": "default",
+                    "filename": "dreamshaperXL_v21TurboDPMSDE.safetensors",
+                    "url": "https://civitai.com/api/download/models/351306",
+                },
+                {
+                    "name": "control-lora-canny-rank256",
+                    "type": "loras",
+                    "save_path": "default",
+                    "filename": "control-lora-canny-rank256.safetensors",
+                    "url": "https://huggingface.co/stabilityai/control-lora/resolve/main/control-LoRAs-rank256/control-lora-canny-rank256.safetensors?download=true",
+                },
+            ],
+        )
 
         valid = execution.validate_prompt(workflow)
 
@@ -58,11 +83,10 @@ def is_api_workflow(workflow) -> bool:
     return all("class_type" in node for node in workflow.values())
 
 
-def install_missing_nodes(workflow, extra_nodes: list[str] = []):
+def install_missing_nodes(workflow):
     # Find missing nodes for workflow
 
     missing_nodes = find_missing_nodes(workflow)
-    missing_nodes.extend(extra_nodes)
 
     if len(missing_nodes) == 0:
         return
@@ -83,7 +107,8 @@ def install_missing_nodes(workflow, extra_nodes: list[str] = []):
                 for node_name in missing_nodes:
                     if node_name in package_node_map[url][0]:
                         package_name = package_node_map[url][1]["title_aux"]
-                        packages_to_download.append(package_name)
+                        if package_name not in packages_to_download:
+                            packages_to_download.append(package_name)
 
             print(f"Packages to install: {packages_to_download}")
 
@@ -118,7 +143,7 @@ def install_missing_nodes(workflow, extra_nodes: list[str] = []):
                         install_cmd = [sys.executable, "-m", "pip", "install", pname]
                         try_install_script(install_cmd)
 
-            nodes.load_custom_nodes(log=True)
+            nodes.load_custom_nodes()
 
 
 def find_missing_nodes(workflow):
@@ -127,7 +152,7 @@ def find_missing_nodes(workflow):
     for node in workflow.values():
         type = node["class_type"]
         all_node_types = nodes.NODE_CLASS_MAPPINGS.keys()
-        if type not in all_node_types:
+        if type not in all_node_types and type not in missing_nodes:
             missing_nodes.append(type)
 
     return missing_nodes
@@ -232,13 +257,13 @@ def try_install_script(cmd, cwd="."):
     subprocess.run(args=cmd, cwd=cwd, check=True)
 
 
-def download_missing_models(
-    workflow, extra_models: list[str] = [], extra_models_info: list[dict] = []
-):
+def download_missing_models(workflow, extra_models: list[dict] = []):
     # Find required models for workflow
 
     used_models = find_used_models(workflow)
-    used_models.extend(extra_models)
+    for entry in extra_models:
+        if entry["filename"] not in used_models:
+            used_models.append(entry["filename"])
 
     print(f"Required models for workflow: {used_models}")
 
@@ -268,7 +293,7 @@ def download_missing_models(
     this_dir = os.path.dirname(os.path.realpath(__file__))
     with open(os.path.join(this_dir, "model-list.json"), "r") as f:
         model_db = yaml.safe_load(f)["models"]
-        model_db.extend(extra_models_info)
+        model_db.extend(extra_models)
 
         entries = []
         for entry in model_db:

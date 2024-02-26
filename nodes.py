@@ -1869,9 +1869,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
 
 EXTENSION_WEB_DIRS = {}
 
-def load_custom_node(module_path, ignore=set(), log=False):
-    if log:
-        print(f"loading custom nodes at {module_path}")
+def load_custom_node(module_path, ignore=set()):
     module_name = os.path.basename(module_path)
     if os.path.isfile(module_path):
         sp = os.path.splitext(module_path)
@@ -1897,8 +1895,6 @@ def load_custom_node(module_path, ignore=set(), log=False):
             for name in module.NODE_CLASS_MAPPINGS:
                 if name not in ignore:
                     NODE_CLASS_MAPPINGS[name] = module.NODE_CLASS_MAPPINGS[name]
-                    if log:
-                        print(f"    adding {name}")
             if hasattr(module, "NODE_DISPLAY_NAME_MAPPINGS") and getattr(module, "NODE_DISPLAY_NAME_MAPPINGS") is not None:
                 NODE_DISPLAY_NAME_MAPPINGS.update(module.NODE_DISPLAY_NAME_MAPPINGS)
             return True
@@ -1910,7 +1906,7 @@ def load_custom_node(module_path, ignore=set(), log=False):
         print(f"Cannot import {module_path} module for custom nodes:", e)
         return False
 
-def load_custom_nodes(log=False):
+def load_custom_nodes():
     base_node_names = set(NODE_CLASS_MAPPINGS.keys())
     node_paths = folder_paths.get_folder_paths("custom_nodes")
     node_import_times = []
@@ -1924,7 +1920,7 @@ def load_custom_nodes(log=False):
             if os.path.isfile(module_path) and os.path.splitext(module_path)[1] != ".py": continue
             if module_path.endswith(".disabled"): continue
             time_before = time.perf_counter()
-            success = load_custom_node(module_path, base_node_names, log)
+            success = load_custom_node(module_path, base_node_names)
             node_import_times.append((time.perf_counter() - time_before, module_path, success))
 
     if len(node_import_times) > 0:
