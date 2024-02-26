@@ -33,6 +33,8 @@ folder_names_and_paths["photomaker"] = ([os.path.join(models_dir, "photomaker")]
 
 folder_names_and_paths["classifiers"] = ([os.path.join(models_dir, "classifiers")], {""})
 
+folder_names_and_paths["ipadapter"] = ([os.path.join(models_dir, "ipadapter")], [])
+
 output_directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), "output")
 temp_directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), "temp")
 input_directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), "input")

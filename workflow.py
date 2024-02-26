@@ -24,18 +24,9 @@ def run_workflow(workflow_file: str, new_base_path: str | None):
 
         if new_base_path:
             adjust_folder_names_and_paths(new_base_path)
-
-            new_custom_nodes_path = os.path.join(folder_paths.base_path, "custom_nodes")
-            if not os.path.isdir(new_custom_nodes_path):
-                os.makedirs(new_custom_nodes_path)
-
             nodes.load_custom_nodes()
 
         install_missing_nodes(workflow)
-
-        if new_base_path:
-            adjust_folder_names_and_paths(new_base_path)
-
         download_missing_models(
             workflow,
             [
@@ -327,7 +318,7 @@ def get_model_dir(entry):
             print(
                 f"[WARN] '{entry['save_path']}' is not allowed path. So it will be saved into 'models/etc'."
             )
-            dir = os.path.join(folder_paths.base_path, "models/etc")
+            dir = os.path.join(folder_paths.models_dir, "etc")
         else:
             if entry["save_path"].startswith("custom_nodes"):
                 dir = os.path.join(
@@ -362,7 +353,7 @@ def get_model_dir(entry):
         elif model_type == "embeddings":
             dir = folder_paths.folder_names_and_paths["embeddings"][0][0]
         else:
-            dir = os.path.join(folder_paths.base_path, "models/etc")
+            dir = os.path.join(folder_paths.models_dir, "etc")
 
     return dir
 
@@ -374,6 +365,9 @@ def adjust_folder_names_and_paths(new_base_path: str):
         return
 
     for category in folder_paths.folder_names_and_paths:
+        if category == "custom_nodes":
+            continue
+
         # for every category, replace the base path with the new base path
         for i, folder in enumerate(folder_paths.folder_names_and_paths[category][0]):
             # skip output folders added in the main script
@@ -386,5 +380,8 @@ def adjust_folder_names_and_paths(new_base_path: str):
 
     print(f"Switching base_path from {folder_paths.base_path} to {new_base_path}")
     folder_paths.base_path = new_base_path
+    folder_paths.models_dir = os.path.join(new_base_path, "models")
+
+    print(f"{folder_paths.folder_names_and_paths}")
 
     return
