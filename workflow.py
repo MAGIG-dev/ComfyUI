@@ -27,17 +27,7 @@ def run_workflow(workflow_file: str, new_base_path: str | None):
             nodes.load_custom_nodes()
 
         install_missing_nodes(workflow)
-        download_missing_models(
-            workflow,
-            [
-                {
-                    "type": "checkpoints",
-                    "save_path": "default",
-                    "filename": "dreamshaperXL_v21TurboDPMSDE.safetensors",
-                    "url": "https://civitai.com/api/download/models/351306",
-                },
-            ],
-        )
+        download_missing_models(workflow)
 
         valid = execution.validate_prompt(workflow)
 
