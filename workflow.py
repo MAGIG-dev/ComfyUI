@@ -355,9 +355,6 @@ def adjust_folder_names_and_paths(new_base_path: str):
         return
 
     for category in folder_paths.folder_names_and_paths:
-        if category == "custom_nodes":
-            continue
-
         # for every category, replace the base path with the new base path
         for i, folder in enumerate(folder_paths.folder_names_and_paths[category][0]):
             # skip output folders added in the main script
