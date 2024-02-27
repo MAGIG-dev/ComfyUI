@@ -1,39 +1,39 @@
 import os
 import time
+from comfy.cli_args import args
 
 supported_pt_extensions = set(['.ckpt', '.pt', '.bin', '.pth', '.safetensors'])
 
 folder_names_and_paths = {}
 
-base_path = os.path.dirname(os.path.realpath(__file__))
+comfy_path = os.path.dirname(os.path.realpath(__file__))
+base_path = args.base_path if args.base_path else comfy_path
 models_dir = os.path.join(base_path, "models")
-folder_names_and_paths["checkpoints"] = ([os.path.join(models_dir, "checkpoints")], supported_pt_extensions)
-folder_names_and_paths["configs"] = ([os.path.join(models_dir, "configs")], [".yaml"])
+folder_names_and_paths["checkpoints"] = ([os.path.join(models_dir, "checkpoints"), os.path.join(comfy_path, "checkpoints")], supported_pt_extensions)
+folder_names_and_paths["configs"] = ([os.path.join(models_dir, "configs"), os.path.join(comfy_path, "configs")], [".yaml"])
 
-folder_names_and_paths["loras"] = ([os.path.join(models_dir, "loras")], supported_pt_extensions)
-folder_names_and_paths["vae"] = ([os.path.join(models_dir, "vae")], supported_pt_extensions)
-folder_names_and_paths["clip"] = ([os.path.join(models_dir, "clip")], supported_pt_extensions)
-folder_names_and_paths["unet"] = ([os.path.join(models_dir, "unet")], supported_pt_extensions)
-folder_names_and_paths["clip_vision"] = ([os.path.join(models_dir, "clip_vision")], supported_pt_extensions)
-folder_names_and_paths["style_models"] = ([os.path.join(models_dir, "style_models")], supported_pt_extensions)
-folder_names_and_paths["embeddings"] = ([os.path.join(models_dir, "embeddings")], supported_pt_extensions)
-folder_names_and_paths["diffusers"] = ([os.path.join(models_dir, "diffusers")], ["folder"])
-folder_names_and_paths["vae_approx"] = ([os.path.join(models_dir, "vae_approx")], supported_pt_extensions)
+folder_names_and_paths["loras"] = ([os.path.join(models_dir, "loras"), os.path.join(comfy_path, "loras")], supported_pt_extensions)
+folder_names_and_paths["vae"] = ([os.path.join(models_dir, "vae"), os.path.join(comfy_path, "vae")], supported_pt_extensions)
+folder_names_and_paths["clip"] = ([os.path.join(models_dir, "clip"), os.path.join(comfy_path, "clip")], supported_pt_extensions)
+folder_names_and_paths["unet"] = ([os.path.join(models_dir, "unet"), os.path.join(comfy_path, "unet")], supported_pt_extensions)
+folder_names_and_paths["clip_vision"] = ([os.path.join(models_dir, "clip_vision"), os.path.join(comfy_path, "clip_vision")], supported_pt_extensions)
+folder_names_and_paths["style_models"] = ([os.path.join(models_dir, "style_models"), os.path.join(comfy_path, "style_models")], supported_pt_extensions)
+folder_names_and_paths["embeddings"] = ([os.path.join(models_dir, "embeddings"), os.path.join(comfy_path, "embeddings")], supported_pt_extensions)
+folder_names_and_paths["diffusers"] = ([os.path.join(models_dir, "diffusers"), os.path.join(comfy_path, "diffusers")], ["folder"])
+folder_names_and_paths["vae_approx"] = ([os.path.join(models_dir, "vae_approx"), os.path.join(comfy_path, "vae_approx")], supported_pt_extensions)
 
-folder_names_and_paths["controlnet"] = ([os.path.join(models_dir, "controlnet"), os.path.join(models_dir, "t2i_adapter")], supported_pt_extensions)
-folder_names_and_paths["gligen"] = ([os.path.join(models_dir, "gligen")], supported_pt_extensions)
+folder_names_and_paths["controlnet"] = ([os.path.join(models_dir, "controlnet"), os.path.join(models_dir, "t2i_adapter"), os.path.join(comfy_path, "controlnet"), os.path.join(comfy_path, "t2i_adapter")], supported_pt_extensions)
+folder_names_and_paths["gligen"] = ([os.path.join(models_dir, "gligen"), os.path.join(comfy_path, "gligen")], supported_pt_extensions)
 
-folder_names_and_paths["upscale_models"] = ([os.path.join(models_dir, "upscale_models")], supported_pt_extensions)
+folder_names_and_paths["upscale_models"] = ([os.path.join(models_dir, "upscale_models"), os.path.join(comfy_path, "upscale_models")], supported_pt_extensions)
 
-folder_names_and_paths["custom_nodes"] = ([os.path.join(base_path, "custom_nodes")], [])
+folder_names_and_paths["custom_nodes"] = ([os.path.join(comfy_path, "custom_nodes")], [])
 
-folder_names_and_paths["hypernetworks"] = ([os.path.join(models_dir, "hypernetworks")], supported_pt_extensions)
+folder_names_and_paths["hypernetworks"] = ([os.path.join(models_dir, "hypernetworks"), os.path.join(comfy_path, "hypernetworks")], supported_pt_extensions)
 
-folder_names_and_paths["photomaker"] = ([os.path.join(models_dir, "photomaker")], supported_pt_extensions)
+folder_names_and_paths["photomaker"] = ([os.path.join(models_dir, "photomaker"), os.path.join(comfy_path, "photomaker")], supported_pt_extensions)
 
-folder_names_and_paths["classifiers"] = ([os.path.join(models_dir, "classifiers")], {""})
-
-folder_names_and_paths["ipadapter"] = ([os.path.join(models_dir, "ipadapter")], [])
+folder_names_and_paths["classifiers"] = ([os.path.join(models_dir, "classifiers"), os.path.join(comfy_path, "classifiers")], {""})
 
 output_directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), "output")
 temp_directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), "temp")

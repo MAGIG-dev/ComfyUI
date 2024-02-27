@@ -22,9 +22,9 @@ def run_workflow(workflow_file: str, new_base_path: str | None):
                 "Workflow is in the wrong format. Please use the API format."
             )
 
-        if new_base_path:
-            adjust_folder_names_and_paths(new_base_path)
-            nodes.load_custom_nodes()
+        # if new_base_path:
+        #     adjust_folder_names_and_paths(new_base_path)
+        #     nodes.load_custom_nodes()
 
         install_missing_nodes(workflow)
         download_missing_models(workflow)
@@ -240,15 +240,19 @@ def download_missing_models(workflow, extra_models: list[dict] = []):
     # Check if models already exist anywhere in the folder paths
 
     models_to_download = []
-    skip_checking_categories = ["custom_nodes"]
 
     for model_name in used_models:
         exists = any(
-            os.path.exists(os.path.join(folder, model_name))
-            for category in folder_paths.folder_names_and_paths
-            if category not in skip_checking_categories
-            for folder in folder_paths.folder_names_and_paths[category][0]
+            os.path.exists(os.path.join(folder_paths.models_dir, folder, model_name))
+            for folder in os.listdir(folder_paths.models_dir)
         )
+
+        if not exists and folder_paths.comfy_path is not folder_paths.base_path:
+            comfy_models_dir = os.path.join(folder_paths.comfy_path, "models")
+            exists = any(
+                os.path.exists(os.path.join(comfy_models_dir, folder, model_name))
+                for folder in os.listdir(comfy_models_dir)
+            )
 
         if not exists:
             models_to_download.append(model_name)
@@ -355,6 +359,9 @@ def adjust_folder_names_and_paths(new_base_path: str):
         return
 
     for category in folder_paths.folder_names_and_paths:
+        if category == "custom_nodes":
+            continue
+
         # for every category, replace the base path with the new base path
         for i, folder in enumerate(folder_paths.folder_names_and_paths[category][0]):
             # skip output folders added in the main script
@@ -364,6 +371,11 @@ def adjust_folder_names_and_paths(new_base_path: str):
             folder_paths.folder_names_and_paths[category][0][i] = folder.replace(
                 folder_paths.base_path, new_base_path
             )
+
+        # add back in the original base path
+        folder_paths.folder_names_and_paths[category][0].append(
+            os.path.join(folder_paths.base_path, category)
+        )
 
     print(f"Switching base_path from {folder_paths.base_path} to {new_base_path}")
     folder_paths.base_path = new_base_path
