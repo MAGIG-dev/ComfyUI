@@ -200,7 +200,9 @@ if __name__ == "__main__":
         except:
             pass
 
-    if not args.workflow:
+    if args.workflow:
+        PromptServer()
+    else:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         server = PromptServer(loop)
