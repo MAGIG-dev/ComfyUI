@@ -228,6 +228,9 @@ def try_install_script(cmd, cwd="."):
 
 
 def download_missing_models(workflow, extra_models: list[dict] = []):
+    if not os.path.exists(folder_paths.models_dir):
+        os.makedirs(folder_paths.models_dir)
+
     # Find required models for workflow
 
     used_models = find_used_models(workflow)
