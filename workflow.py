@@ -22,6 +22,18 @@ def run_workflow(workflow_file: str, extra_models: list[dict] = []):
                 "Workflow is in the wrong format. Please use the API format."
             )
 
+        # Randomize seed
+        for node in workflow.values():
+            if "input" in node:
+                keys = ["seed", "noise_seed"]
+                for key in keys:
+                    if key in node["input"]:
+                        new_seed = uuid.uuid4().int
+                        print(
+                            f"Randomizing {key} to {new_seed} for node {node['class_type']}"
+                        )
+                        node["input"][key] = new_seed
+
         install_missing_nodes(workflow)
         download_missing_models(workflow, extra_models)
 
