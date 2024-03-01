@@ -5,6 +5,7 @@ import uuid
 import time
 import yaml  # type: ignore
 import nodes
+import random
 import zipfile
 import execution
 import subprocess
@@ -28,7 +29,7 @@ def run_workflow(workflow_file: str, extra_models: list[dict] = []):
                 keys = ["seed", "noise_seed"]
                 for key in keys:
                     if key in node["inputs"]:
-                        new_seed = uuid.uuid4().int
+                        new_seed = random.randint(0, 0xFFFFFFFFFFFFFFFF)
                         print(
                             f"Randomizing {key} to {new_seed} for node {node['class_type']}"
                         )
@@ -38,6 +39,7 @@ def run_workflow(workflow_file: str, extra_models: list[dict] = []):
         install_missing_nodes(workflow)
 
         valid = execution.validate_prompt(workflow)
+        print("Validation result:", valid)
 
         if valid[0]:
             prompt_id = str(uuid.uuid4())
