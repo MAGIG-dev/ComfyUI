@@ -245,7 +245,12 @@ if __name__ == "__main__":
         exit(0)
 
     if args.workflow:
-        run_workflow(args.workflow, args.base_path)
+        extra_models = []
+        if args.extra_models:
+            extra_models = yaml.safe_load(args.extra_models)
+
+        run_workflow(args.workflow, extra_models)
+            
     else:
         call_on_start = None
         if args.auto_launch:

@@ -13,7 +13,7 @@ import urllib.request
 from torchvision.datasets.utils import download_url  # type: ignore
 
 
-def run_workflow(workflow_file: str, new_base_path: str | None):
+def run_workflow(workflow_file: str, extra_models: list[dict] = []):
     with open(workflow_file, "r") as f:
         workflow = yaml.safe_load(f)
 
@@ -22,12 +22,8 @@ def run_workflow(workflow_file: str, new_base_path: str | None):
                 "Workflow is in the wrong format. Please use the API format."
             )
 
-        # if new_base_path:
-        #     adjust_folder_names_and_paths(new_base_path)
-        #     nodes.load_custom_nodes()
-
         install_missing_nodes(workflow)
-        download_missing_models(workflow)
+        download_missing_models(workflow, extra_models)
 
         valid = execution.validate_prompt(workflow)
 
