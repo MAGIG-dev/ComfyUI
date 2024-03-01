@@ -34,8 +34,8 @@ def run_workflow(workflow_file: str, extra_models: list[dict] = []):
                         )
                         node["inputs"][key] = new_seed
 
-        install_missing_nodes(workflow)
         download_missing_models(workflow, extra_models)
+        install_missing_nodes(workflow)
 
         valid = execution.validate_prompt(workflow)
 
