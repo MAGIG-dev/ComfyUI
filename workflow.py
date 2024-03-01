@@ -313,7 +313,7 @@ def find_used_models(workflow) -> list[str]:
             for input in node["inputs"]:
                 value = node["inputs"][input]
                 if isinstance(value, str) and value.endswith(tuple(scan_for_filetypes)):
-                    models.append(value)
+                    models.append(value.split("/")[-1])
 
     return models
 
