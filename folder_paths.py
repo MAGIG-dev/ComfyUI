@@ -35,6 +35,9 @@ folder_names_and_paths["photomaker"] = ([os.path.join(models_dir, "photomaker"),
 
 folder_names_and_paths["classifiers"] = ([os.path.join(models_dir, "classifiers"), os.path.join(comfy_path, "classifiers")], {""})
 
+# Wildcards are used for custom nodes (ComfyUI-Malefish-Custom-Scripts)
+folder_names_and_paths["wildcards"] = ([os.path.join(models_dir, "wildcards"), os.path.join(comfy_path, "wildcards")], {""})
+
 output_directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), "output")
 temp_directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), "temp")
 input_directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), "input")
