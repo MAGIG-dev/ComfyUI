@@ -11,52 +11,48 @@ import execution
 import subprocess
 import folder_paths
 import urllib.request
+from typing import Any
 from torchvision.datasets.utils import download_url  # type: ignore
 
 
-def run_workflow(workflow_file: str, extra_models: list[dict] = []):
-    with open(workflow_file, "r") as f:
-        workflow = yaml.safe_load(f)
+def run_workflow(workflow: Any, extra_models: list[dict] = []):
+    if not is_api_workflow(workflow):
+        raise Exception("Workflow is in the wrong format. Please use the API format.")
 
-        if not is_api_workflow(workflow):
-            raise Exception(
-                "Workflow is in the wrong format. Please use the API format."
-            )
+    # Randomize seed
+    for node in workflow.values():
+        if "inputs" in node:
+            keys = ["seed", "noise_seed"]
+            for key in keys:
+                if key in node["inputs"]:
+                    new_seed = random.randint(0, 0xFFFFFFFFFFFFFFFF)
+                    print(
+                        f"Randomizing {key} to {new_seed} for node {node['class_type']}"
+                    )
+                    node["inputs"][key] = new_seed
 
-        # Randomize seed
-        for node in workflow.values():
-            if "inputs" in node:
-                keys = ["seed", "noise_seed"]
-                for key in keys:
-                    if key in node["inputs"]:
-                        new_seed = random.randint(0, 0xFFFFFFFFFFFFFFFF)
-                        print(
-                            f"Randomizing {key} to {new_seed} for node {node['class_type']}"
-                        )
-                        node["inputs"][key] = new_seed
+    download_missing_models(workflow, extra_models)
+    install_missing_nodes(workflow)
 
-        download_missing_models(workflow, extra_models)
-        install_missing_nodes(workflow)
+    valid = execution.validate_prompt(workflow)
+    print("Validation result:", valid)
 
-        valid = execution.validate_prompt(workflow)
-        print("Validation result:", valid)
+    if valid[0]:
+        prompt_id = str(uuid.uuid4())
+        outputs_to_execute = valid[2]
 
-        if valid[0]:
-            prompt_id = str(uuid.uuid4())
-            outputs_to_execute = valid[2]
+        execution_start_time = time.perf_counter()
+        e = execution.PromptExecutor()
 
-            execution_start_time = time.perf_counter()
-            e = execution.PromptExecutor()
+        e.execute(workflow, prompt_id, {}, outputs_to_execute)
 
-            e.execute(workflow, prompt_id, {}, outputs_to_execute)
+        current_time = time.perf_counter()
+        execution_time = current_time - execution_start_time
 
-            current_time = time.perf_counter()
-            execution_time = current_time - execution_start_time
-
-            print("Prompt executed in {:.2f} seconds".format(execution_time))
-        else:
-            print("invalid prompt:", valid[1])
-            print("node errors:", valid[3])
+        print("Prompt executed in {:.2f} seconds".format(execution_time))
+    else:
+        print("invalid prompt:", valid[1])
+        print("node errors:", valid[3])
 
 
 def is_api_workflow(workflow) -> bool:

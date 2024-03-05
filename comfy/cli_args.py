@@ -33,7 +33,7 @@ class EnumAction(argparse.Action):
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("--workflow", type=str, help="The workflow to run. If this flag is set it won't start a server and run only the given workflow.")
+parser.add_argument("--workflow", type=str, help="The workflow to run (JSON string or path to file in API format). If this flag is set it won't start a server and run only the given workflow.")
 parser.add_argument("--extra-models", type=str, help="Extra models to load.")
 parser.add_argument("--base-path", type=str, help="The adjusted base path for the workflow to use.")
 

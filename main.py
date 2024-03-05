@@ -245,11 +245,17 @@ if __name__ == "__main__":
         exit(0)
 
     if args.workflow:
+        if os.path.isfile(args.workflow):
+            with open(args.workflow, "r") as f:
+                workflow = yaml.safe_load(f)
+        else:
+            workflow = yaml.safe_load(args.workflow)
+
         extra_models = []
         if args.extra_models:
             extra_models = yaml.safe_load(args.extra_models)
 
-        run_workflow(args.workflow, extra_models)
+        run_workflow(workflow, extra_models)
             
     else:
         call_on_start = None
