@@ -5429,16 +5429,6 @@
             "description": "ComfyUI Node - Hugging Face repositories GTP2 Prompt"
         },
         {
-            "author": "LykosAI",
-            "title": "ComfyUI Nodes for Inference.Core",
-            "reference": "https://github.com/LykosAI/ComfyUI-Inference-Core-Nodes",
-            "files": [
-                "https://github.com/LykosAI/ComfyUI-Inference-Core-Nodes"
-            ],
-            "install_type": "git-clone",
-            "description": "Primary Nodes for Inference.Core and Stability Matrix. With a focus on not impacting startup performance and using fully qualified Node names."
-        },
-        {
             "author": "Klinter",
             "title": "Klinter_nodes",
             "reference": "https://github.com/klinter007/klinter_nodes",
