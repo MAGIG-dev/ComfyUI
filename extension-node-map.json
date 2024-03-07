@@ -9198,5 +9198,13 @@
         {
             "title_aux": "SDXLCustomAspectRatio"
         }
+    ],
+    "https://github.com/kijai/ComfyUI-SUPIR": [
+        [
+            "SUPIR_Upscale"
+        ],
+        {
+            "title_aux": "ComfyUI-SUPIR"
+        }
     ]
 }
