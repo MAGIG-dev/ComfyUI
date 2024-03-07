@@ -212,6 +212,8 @@ def execute_install_script(repo_path):
     if os.path.exists(requirements_path):
         with open(requirements_path, "r") as requirements_file:
             for line in requirements_file:
+                if line.startswith("#"):
+                    continue
                 package_name = line.strip()
                 if package_name:
                     install_cmd = [
