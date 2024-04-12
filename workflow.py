@@ -19,8 +19,8 @@ def run_workflow(workflow: Any, extra_models: list[dict] = []):
     if not is_api_workflow(workflow):
         raise Exception("Workflow is in the wrong format. Please use the API format.")
 
-    # Randomize seed
     for node in workflow.values():
+        # Randomize seed
         if "inputs" in node:
             keys = ["seed", "noise_seed"]
             for key in keys:
@@ -30,6 +30,18 @@ def run_workflow(workflow: Any, extra_models: list[dict] = []):
                         f"Randomizing {key} to {new_seed} for node {node['class_type']}"
                     )
                     node["inputs"][key] = new_seed
+
+        # map image folder to first image in folder
+        if (
+            "inputs" in node
+            and "class_type" in node
+            and node["class_type"] == "LoadImage"
+        ):
+            path = node["inputs"]["image"]
+            if os.path.isdir(path):
+                files = os.listdir(path)
+                if len(files) > 0:
+                    node["inputs"]["image"] = os.path.join(path, files[0])
 
     download_missing_models(workflow, extra_models)
     install_missing_nodes(workflow)
